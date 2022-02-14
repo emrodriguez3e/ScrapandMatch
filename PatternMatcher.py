@@ -1,139 +1,102 @@
-import webbrowser
-import urllib.request
-import ast
-import json
-import re
-import os
-
+import webbrowser, urllib.request, ast, json, re, os
 
 def setUrl():
-    
+
+    '''
+    Should attempt to make the portion after getItems to be dynamic if possible.
+    That way if the numbers change, it won't be an issue.
+    '''
     url = 'https://secure.rec1.com/CA/cypress-recreation-community-services/catalog/getItems/b06dd2a58023baa31f9e4323d179f83a/'
 
+    #set all class locations
+    classCategories = {'artsCraft': '2761',
+                       'specialInterest': '2759',
+                       'youthSports': '3057',
+                       'specialEvents': '2770',
+                       'educationEnrichment': '2758',
+                       'sports': '2762',
+                       'teenClasses': '8184',
+                       'healthFitness': '2758',
+                       'dayCamps': '2771',
+                       'music': '2760',
+                       'specialtyCamps': '2991'
+                       }
+
+    '''
+    Current sections at the moment.
+    Had to go into web developer mode to find the numbers below under the network tab
     artsCraft = "2761"
     specialInterest = "2759"
     youthSports = "3057"
     dance = "2757"
     specialEvents = "2770"
-    deucationEnrichment = "2758"
+    educationEnrichment = "2758"
     sports = "2762"
     teenClasses = "8184"
     healthFitness = "2758"
     dayCamps = "2771"
     music = "2760"
     specialtyCamps = "2991"
+    '''
 
+    #urlTest = url+artsCraft
 
-    urlTest = url+artsCraft
+    #create empty string that will be used to merge all class lists together
+    myStr = ""
 
-    return grabSite(urlTest)
+    #for each category, get the text version
+    for values in classCategories.values():
+        urlTest = url+values
 
-'''
-arts&craft - 2761
-specialInterest - 2759
-youthSportsCa - 3057
-dance-2757
-specialEvents - 2770
-educationEncrichment - 2758
-sports - 2762
-teenClasses - 8184
-healthFitness - 2763
-dayCamps - 2771
-music - 2760
-specialityCamps - 2991
-'''
-
+        myStr += grabSite(urlTest)
+        
+    return textForm(myStr)
 
 
 def grabSite(urlTest):
     #webbrowser.open(urlTest)
+        
     fp = urllib.request.urlopen(urlTest)
     mystr = fp.read().decode('utf8') #contains all classes. For loop actually messes with the string
     fp.close()
 
-    return textForm(mystr)
-
-
-'''
-mystr seems to be a list within a list. Might be able to format this much better.
-Can perform a regex operation of a contains function.
-'''
-
+    return mystr
 
 def textForm(classList):
     
-    classListOutput = str(classList)
+    classListOutput = str(classList) #convert text into string directly
 
-    classListOutput = classListOutput.replace("',", "',\n")
-    classListOutput = classListOutput.replace("None,", "None,\n")
-    classListOutput = classListOutput.replace("True,", "True,\n")
-    classListOutput = classListOutput.replace("},", "\n},\n")
-    classListOutput = classListOutput.replace("[]", "[]\n")
-    classListOutput = classListOutput.replace("]", "]\n")
-    classListOutput = classListOutput.replace("[{'", "[{\n'")
-    classListOutput = classListOutput.replace("{'\n{'\n", "\n")
-    classListOutput = classListOutput.replace("\\n", "{'\n")
-    classListOutput = classListOutput.replace("\\r", "{'\r")
-    classListOutput = classListOutput.replace("&amp;", "&")
-    classListOutput = classListOutput.replace("{'\n","")
-    classListOutput = classListOutput.replace(".\n{'\n","")
-    classListOutput = classListOutput.replace("","")
-    classListOutput = classListOutput.replace("\'id","{\'id")
-    classListOutput = classListOutput.replace("\'name","{\'name")
+    #regex 
+    classListOutput = re.sub("{","{\n",classListOutput)
+    classListOutput = re.sub("},{","},\n{",classListOutput)
+    classListOutput = re.sub("\",\"","\",\n\"",classListOutput)
+    classListOutput = re.sub("null,","null,\n",classListOutput)
+    classListOutput = re.sub("true,","true,\n",classListOutput)
+    classListOutput = re.sub("false,","false,\n",classListOutput)
+    classListOutput = re.sub("</?[a-zA-z]*>|<\\\/[a-zA-Z]*>|&nbsp;","",classListOutput)
+    classListOutput = re.sub("<[a-zA-z]* .*>","",classListOutput) 
+    classListOutput = re.sub("}],","}],\n",classListOutput)
+    classListOutput = re.sub("\\\/"," ",classListOutput)
 
-    
-    classListOutput = re.sub("</?[a-zA-Z]*>|<[a-zA-Z]* [a-zA-Z]*=\"[a-zA-Z]*: #[a-zA-Z]*\d*;\">|\n\n", "", classListOutput)
-    classListOutput = re.sub("\n{'\n","{'\n",classListOutput)
-    classListOutput = re.sub("\'","",classListOutput)
-    classListOutput = re.sub("<.*>","",classListOutput)
-    classListOutput = re.sub("&[a-zA-Z]*;","",classListOutput)
-    classListOutput = classListOutput.replace("{\'","\'")
-    classListOutput = classListOutput.replace("StudentsMUSTbe","Students MUST be")
+    #hard replace
+    classListOutput = classListOutput.replace("[],","[],\n")
+    classListOutput = classListOutput.replace("}","\n}")
+    classListOutput = classListOutput.replace("\\r","")
+    classListOutput = classListOutput.replace("\\n","")
     
     return classListOutput
 
+#Made for testing purposes I suppose. 
 def stop():
     quit()
 
-
-#Convert string to dict (can't convert at the moment)
-#myDict = ast.literal_eval(mystr)
-
-#Convert string to list
-#myList = mystr.split(',')
-
-#Conver string to dict using json.loads
-#myJson = json.loads(mystr)
-
-
-
-#this produces another depth that I might have to change into another dictionary. 
-#for k,v in myJson.items():
- #   if k == 'sections':
-        #vStr = ''.join([str(elem) for elem in v])
-
-        #need to convert dict v[0] to a string version first
-  #      classList = v[0]
-        
-#print(type(classList))
-
-
-#classListOutput = textForm(mystr)
-#Think the line below will wrap everything in curly
-
-  
-def outFile(x):
+def outFile(classList):
     file_obj = open("output.txt", "w")
-    file_obj.write(x)
+    file_obj.write(classList)
     file_obj.close()
     os.startfile("output.txt")
 
-
 if __name__ == "__main__":
-    x = setUrl() #set the url string
-    outFile(x)
-
-
-
-
+    classList = setUrl() #set the url string
+    outFile(classList)
 
